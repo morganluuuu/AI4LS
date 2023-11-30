@@ -6,21 +6,61 @@ import os
 INPUT_CSV_PATH = f'{os.path.dirname(os.path.abspath(__file__))}/input_csv/*.csv'
 OUTPUT_CSV_PATH = f'{os.path.dirname(os.path.abspath(__file__))}/output_csv/combined_csv.csv'
 CHUNKSIZE = 10000 
-SELECTED_COLS = """
-    pH*|pH|p
+SELECTED_COLS = '''pH_H2O|pH_CaCl2|EC|OC|CaCO3|P|N|K|LC1_Desc|LU1_Desc'''
 
-    """
+# Define a dictionary to map old column names to new ones
+COL_NAME_MAPPING = {
+        'POINT_ID': 'ID',
+        'Point_ID': 'ID',
+        'POINTID': 'ID',
+        'pH_in_H2O': 'pH_H2O',
+        'pH(H2O)': 'pH_H2O',
+        'pH_H2O': 'pH_H2O',
+        'pH_in_CaCl': 'pH_CaCl2',
+        'pH(CaCl2)': 'pH_CaCl2',
+        'pH_CaCl2': 'pH_CaCl2',
+        'P_x': 'P',
+        'CEC': 'EC',
+        # Add more mappings as needed
+    }
 
-def input_csv(input_path: str = INPUT_CSV_PATH, 
-              selected_cols: str = SELECTED_COLS,
-              chunksize: int = CHUNKSIZE) -> list:
-    """ Read CSVs to a DataFrame list """
+def unify_col_name(input_path: str = INPUT_CSV_PATH, 
+                   column_mapping: dict = COL_NAME_MAPPING) -> None:
+    ''' Rename the columns of all CSV files in the input path'''
     try:
+        # Get a list of all CSV files
         csv_list = glob.glob(input_path)
         if not csv_list:
             raise Exception("No CSV files found. Please check the input path... ")
         else:
-            print(f" {len(csv_list)} CSV files found...")
+            print(f" {len(csv_list)} CSV files found for rename...")
+            # Process each file
+            for file in csv_list:
+                # Read the file
+                df = pd.read_csv(file)
+
+                # Rename the columns
+                df.rename(columns=column_mapping, inplace=True)
+
+                # Write the data back to the file
+                df.to_csv(file, index=False)
+            print(" Renamed CSV columns successfully!...")
+    except Exception as e:
+        print(f" Error while renaming CSV columns : {e}")
+
+
+def input_csv(input_path: str = INPUT_CSV_PATH, 
+              usecols: str = SELECTED_COLS,
+              chunksize: int = CHUNKSIZE) -> list:
+    """ Read CSVs to a DataFrame list """
+    try:
+        # Get a list of all CSV files
+        csv_list = glob.glob(input_path)
+        if not csv_list:
+            raise Exception("No CSV files found. Please check the input path... ")
+        else:
+            print(f" {len(csv_list)} CSV files found for read...")
+            # Read the CSV files
             df_list = [chunk for file in csv_list for chunk in pd.read_csv(
                         # I/O
                         file, 
@@ -33,13 +73,14 @@ def input_csv(input_path: str = INPUT_CSV_PATH,
                         sep = None, 
                         header = 'infer', 
                         index_col = None, 
-                        usecols = lambda col: re.match(re.compile(r'' + selected_cols,re.IGNORECASE), col),
+                        usecols = lambda col: re.match(r'' + usecols, col),
+                        # usecols = usecols,
                         converters = None,
                         # Content
                         escapechar = None,
                         keep_default_na = True, 
                         na_filter = True, 
-                        skip_blank_lines = True, 
+                        skip_blank_lines = False, 
                         )]  
             print(" Read CSV files successfully...")
             return df_list
@@ -56,7 +97,7 @@ def combine_csv(df) -> pd.DataFrame:
         return combined_df
     
     except Exception as e:
-        print("Error while combined to CSV: ", str(e))
+        print(" Error while combined to CSV: ", str(e))
     
     
 def output_csv(df, chunksize: int = CHUNKSIZE, 
@@ -76,4 +117,6 @@ def output_csv(df, chunksize: int = CHUNKSIZE,
         
         
 if __name__ == '__main__':
+    unify_col_name()
     output_csv(combine_csv(input_csv()))
+        
