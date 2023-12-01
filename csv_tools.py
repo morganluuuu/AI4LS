@@ -2,12 +2,16 @@ import pandas as pd
 import glob
 import re
 import os
+import gc
  
 INPUT_CSV_PATH = f'{os.path.dirname(os.path.abspath(__file__))}/input_csv/*.csv'
 OUTPUT_CSV_PATH = f'{os.path.dirname(os.path.abspath(__file__))}/output_csv/combined_csv.csv'
-CHUNKSIZE = 10000 
-SELECTED_COLS = '''pH_H2O|pH_CaCl2|EC|OC|CaCO3|P|N|K|LC1_Desc|LU1_Desc'''
 
+# Define the chunksize for reading CSV files
+CHUNKSIZE = 10000 
+# Add more columns as needed
+SELECTED_COLS = "ID|pH_H2O|pH_CaCl2|EC|OC|CaCO3|P|N|K|LC1_Desc|LU1_Desc"
+    
 # Define a dictionary to map old column names to new ones
 COL_NAME_MAPPING = {
         'POINT_ID': 'ID',
@@ -15,10 +19,8 @@ COL_NAME_MAPPING = {
         'POINTID': 'ID',
         'pH_in_H2O': 'pH_H2O',
         'pH(H2O)': 'pH_H2O',
-        'pH_H2O': 'pH_H2O',
         'pH_in_CaCl': 'pH_CaCl2',
         'pH(CaCl2)': 'pH_CaCl2',
-        'pH_CaCl2': 'pH_CaCl2',
         'P_x': 'P',
         'CEC': 'EC',
         # Add more mappings as needed
@@ -26,7 +28,7 @@ COL_NAME_MAPPING = {
 
 def unify_col_name(input_path: str = INPUT_CSV_PATH, 
                    column_mapping: dict = COL_NAME_MAPPING) -> None:
-    ''' Rename the columns of all CSV files in the input path'''
+    '''Rename the columns of all CSV files in the input path'''
     try:
         # Get a list of all CSV files
         csv_list = glob.glob(input_path)
@@ -44,7 +46,12 @@ def unify_col_name(input_path: str = INPUT_CSV_PATH,
 
                 # Write the data back to the file
                 df.to_csv(file, index=False)
+                
+            # Delete the DataFrame to save memory
+            del df
+            gc.collect()
             print(" Renamed CSV columns successfully!...")
+            
     except Exception as e:
         print(f" Error while renaming CSV columns : {e}")
 
@@ -74,7 +81,6 @@ def input_csv(input_path: str = INPUT_CSV_PATH,
                         header = 'infer', 
                         index_col = None, 
                         usecols = lambda col: re.match(r'' + usecols, col),
-                        # usecols = usecols,
                         converters = None,
                         # Content
                         escapechar = None,
@@ -89,16 +95,18 @@ def input_csv(input_path: str = INPUT_CSV_PATH,
         print(f" Error while reading CSV : {e}")
 
 
-def combine_csv(df) -> pd.DataFrame:
+def combine_csv(df: list, usecols: str = SELECTED_COLS) -> pd.DataFrame:
     """ Concatenate all the dataframes in the list """
     try:
         combined_df = pd.concat(df, ignore_index=True)
+        # Reselect the columns
+        reselected_df = combined_df[usecols.split('|')]
         print(" Combined dataframes successfully!...")
-        return combined_df
+        return reselected_df
     
     except Exception as e:
         print(" Error while combined to CSV: ", str(e))
-    
+        
     
 def output_csv(df, chunksize: int = CHUNKSIZE, 
                output_path: str = OUTPUT_CSV_PATH) -> None:
@@ -109,6 +117,10 @@ def output_csv(df, chunksize: int = CHUNKSIZE,
             mode = 'w', # 'w', 'a', 'x'
             encoding = 'utf-8', 
             chunksize = chunksize,)
+        
+        # Delete the DataFrame to save memory
+        del df
+        gc.collect()
         print(" CSV file created successfully!...")
     except PermissionError: 
         print(" Permission denied. Unable to write the CSV file...")
@@ -117,6 +129,9 @@ def output_csv(df, chunksize: int = CHUNKSIZE,
         
         
 if __name__ == '__main__':
+    # Create output folders if they don't exist
+    if not os.path.exists(os.path.dirname(INPUT_CSV_PATH)):
+        os.makedirs(os.path.dirname(INPUT_CSV_PATH))
+    
     unify_col_name()
     output_csv(combine_csv(input_csv()))
-        
