@@ -6,26 +6,32 @@ import gc
 import sqlite3
 
 INPUT_CSV_PATH = f'{os.path.dirname(os.path.abspath(__file__))}/input_csv/*.csv'
-OUTPUT_CSV_PATH = f'{os.path.dirname(os.path.abspath(__file__))}/output_csv/combined_csv.csv'
-
+OUTPUT_CSV_PATH = f'{os.path.dirname(os.path.abspath(__file__))}/output_csv/concatenated_csv.csv'
 # Define the chunksize for reading CSV files
 CHUNKSIZE = 10000 
 # Add more columns as needed
-SELECTED_COLS = "ID|pH_H2O|pH_CaCl2|EC|OC|CaCO3|P|N|K|LC1_Desc|LU1_Desc"
+SELECTED_COLS = "POINTID|GPS_LAT|GPS_LONG|Coarse|Clay|Sand|Silt|pH_H2O|pH_CaCl2|EC|OC|CaCO3|P|N|K|LC0_Desc|LC1_Desc|LU1_Desc|Un-/Managed_LU|BD 0-10|BD 10-20|BD 20-30|BD 0-20"
     
 # Define a dictionary to map old column names to new ones
 COL_NAME_MAPPING = {
-        'POINT_ID': 'ID',
-        'Point_ID': 'ID',
-        'POINTID': 'ID',
+        'POINT_ID': 'POINTID',
+        'Point_ID': 'POINTID',
         'pH_in_H2O': 'pH_H2O',
         'pH(H2O)': 'pH_H2O',
         'pH_in_CaCl': 'pH_CaCl2',
         'pH(CaCl2)': 'pH_CaCl2',
         'P_x': 'P',
         'CEC': 'EC',
+        'coarse': 'Coarse',
+        'clay' : 'Clay',
+        'silt' : 'Silt',
+        'sand' : 'Sand',
+        'TH_LAT' : 'GPS_LAT',
+        'TH_LONG': 'GPS_LONG',
         # Add more mappings as needed
     }
+# Biodiversity (still preparing) 
+
 
 
 def unify_col_name(input_path: str = INPUT_CSV_PATH, 
@@ -51,10 +57,10 @@ def unify_col_name(input_path: str = INPUT_CSV_PATH,
             # Process each file
             for file in csv_list:
                 # Read the file
-                df = pd.read_csv(file)
+                df = pd.read_csv(file,low_memory=False)
 
                 # Rename the columns
-                df.rename(columns=column_mapping, inplace=True)
+                df.rename(columns = column_mapping, inplace = True)
 
                 # Write the data back to the file
                 df.to_csv(file, index=False)
@@ -103,7 +109,7 @@ def input_csv(input_path: str = INPUT_CSV_PATH,
                         # Columns
                         sep = None, 
                         header = 'infer', 
-                        index_col = None, 
+                        index_col = False, 
                         usecols = lambda col: re.match(r'' + usecols, col),
                         converters = None,
                         # Content
@@ -111,7 +117,7 @@ def input_csv(input_path: str = INPUT_CSV_PATH,
                         keep_default_na = True, 
                         na_filter = True, 
                         skip_blank_lines = False, 
-                        )]  
+                        )]   
             print(" Read CSV files successfully...")
             return df_list
             
@@ -119,7 +125,8 @@ def input_csv(input_path: str = INPUT_CSV_PATH,
         print(f" Error while reading CSV : {e}")
 
 
-def combine_csv(df: list, usecols: str = SELECTED_COLS) -> pd.DataFrame:
+def concat_csv(df: list, 
+               usecols: str = SELECTED_COLS) -> pd.DataFrame:
     """
     Concatenates a list of dataframes and selects specified columns.
 
@@ -134,16 +141,20 @@ def combine_csv(df: list, usecols: str = SELECTED_COLS) -> pd.DataFrame:
         Exception: If an error occurs while combining the dataframes.
     """
     try:
-        combined_df = pd.concat(df, ignore_index=True)
+        # Concatenate the dataframes
+        concat_df = pd.concat(df, 
+                              ignore_index = True # Reset the index and ave a new continuous index.
+                              )
         # Reselect the columns
-        reselected_df = combined_df[usecols.split('|')]
-        print("Combined dataframes successfully!...")
+        reselected_df = concat_df[usecols.split('|')]
+        # Add a name to the index
+        reselected_df.index.name = 'ID'
+        print(" Concat dataframes successfully!...")
         return reselected_df
-    
+
     except Exception as e:
-        print("Error while combining to CSV:", str(e))
+        print("Error while combining CSV:", str(e))
         
-    
 def output_csv(df, chunksize: int = CHUNKSIZE, 
                output_path: str = OUTPUT_CSV_PATH) -> None:
     """
@@ -205,8 +216,7 @@ def output_sqlite(df, db_name: str = 'combined_csv.db',
         
         
 if __name__ == '__main__':
-    
     unify_col_name()
-    output_sqlite(combine_csv(input_csv()))
+    output_csv(concat_csv(input_csv()))
         
         
