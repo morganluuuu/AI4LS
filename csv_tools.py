@@ -3,7 +3,8 @@ import glob
 import re
 import os
 import gc
- 
+import sqlite3
+
 INPUT_CSV_PATH = f'{os.path.dirname(os.path.abspath(__file__))}/input_csv/*.csv'
 OUTPUT_CSV_PATH = f'{os.path.dirname(os.path.abspath(__file__))}/output_csv/combined_csv.csv'
 
@@ -26,14 +27,25 @@ COL_NAME_MAPPING = {
         # Add more mappings as needed
     }
 
+
 def unify_col_name(input_path: str = INPUT_CSV_PATH, 
                    column_mapping: dict = COL_NAME_MAPPING) -> None:
-    '''Rename the columns of all CSV files in the input path'''
+    '''
+    Renames columns in multiple CSV files to solve the problem of discrepancies in column names.
+    Args:
+        input_path (str): The path to the directory containing the CSV files. Defaults to INPUT_CSV_PATH.
+        column_mapping (dict): A dictionary mapping the old column names to the new column names. 
+                               Defaults to COL_NAME_MAPPING.
+    Returns:
+        None: This function does not return anything.
+    Raises:
+        Exception: If no CSV files are found at the specified input path.
+    '''
     try:
         # Get a list of all CSV files
         csv_list = glob.glob(input_path)
         if not csv_list:
-            raise Exception("No CSV files found. Please check the input path... ")
+            raise FileNotFoundError("No CSV files found. Please check the input path... ")
         else:
             print(f" {len(csv_list)} CSV files found for rename...")
             # Process each file
@@ -46,12 +58,11 @@ def unify_col_name(input_path: str = INPUT_CSV_PATH,
 
                 # Write the data back to the file
                 df.to_csv(file, index=False)
-                
-            # Delete the DataFrame to save memory
-            del df
-            gc.collect()
+
+                # Release memory
+                del df
+                gc.collect()
             print(" Renamed CSV columns successfully!...")
-            
     except Exception as e:
         print(f" Error while renaming CSV columns : {e}")
 
@@ -59,12 +70,25 @@ def unify_col_name(input_path: str = INPUT_CSV_PATH,
 def input_csv(input_path: str = INPUT_CSV_PATH, 
               usecols: str = SELECTED_COLS,
               chunksize: int = CHUNKSIZE) -> list:
-    """ Read CSVs to a DataFrame list """
+    """
+    Read CSVs to a DataFrame list.
+
+    Args:
+        input_path (str): Path to the CSV files. Defaults to INPUT_CSV_PATH.
+        usecols (str): Columns to be read from the CSV files. Defaults to SELECTED_COLS.
+        chunksize (int): Number of rows to be read at a time. Defaults to CHUNKSIZE.
+
+    Returns:
+        list: List of DataFrames containing the CSV data.
+
+    Raises:
+        FileNotFoundError: If no CSV files are found at the specified input path.
+    """
     try:
         # Get a list of all CSV files
         csv_list = glob.glob(input_path)
         if not csv_list:
-            raise Exception("No CSV files found. Please check the input path... ")
+            raise FileNotFoundError("No CSV files found. Please check the input path... ")
         else:
             print(f" {len(csv_list)} CSV files found for read...")
             # Read the CSV files
@@ -96,21 +120,44 @@ def input_csv(input_path: str = INPUT_CSV_PATH,
 
 
 def combine_csv(df: list, usecols: str = SELECTED_COLS) -> pd.DataFrame:
-    """ Concatenate all the dataframes in the list """
+    """
+    Concatenates a list of dataframes and selects specified columns.
+
+    Parameters:
+        df (list): A list of pandas dataframes to be concatenated.
+        usecols (str): A string specifying the columns to be selected. Default is SELECTED_COLS.
+
+    Returns:
+        pd.DataFrame: The concatenated dataframe with selected columns.
+
+    Raises:
+        Exception: If an error occurs while combining the dataframes.
+    """
     try:
         combined_df = pd.concat(df, ignore_index=True)
         # Reselect the columns
         reselected_df = combined_df[usecols.split('|')]
-        print(" Combined dataframes successfully!...")
+        print("Combined dataframes successfully!...")
         return reselected_df
     
     except Exception as e:
-        print(" Error while combined to CSV: ", str(e))
+        print("Error while combining to CSV:", str(e))
         
     
 def output_csv(df, chunksize: int = CHUNKSIZE, 
                output_path: str = OUTPUT_CSV_PATH) -> None:
-    """ Write the combined DataFrame to a new CSV file """
+    """
+    Write the combined DataFrame to a new CSV file.
+
+    Parameters:
+    - df: pandas.DataFrame
+        The DataFrame to be written to the CSV file.
+    - chunksize: int, optional
+        The number of rows to write at a time. Default is CHUNKSIZE.
+    - output_path: str, optional
+        The path to the output CSV file. Default is OUTPUT_CSV_PATH.
+
+    """
     try:
         df.to_csv(
             path_or_buf = output_path,
@@ -127,11 +174,39 @@ def output_csv(df, chunksize: int = CHUNKSIZE,
     except Exception as e:
         print(" Error while writing to CSV: ", str(e))
         
+def output_sqlite(df, db_name: str = 'combined_csv.db', 
+                  table_name: str = 'combined_csv') -> None:
+    """
+    Write the combined DataFrame to a new SQLite database.
+
+    Parameters:
+    - df: pandas.DataFrame
+        The DataFrame to be written to the SQLite database.
+    - db_name: str, optional
+        The name of the SQLite database. Default is 'combined_csv.db'.
+    - table_name: str, optional
+        The name of the table in the SQLite database. Default is 'combined_csv'.
+
+    """
+    try:
+        # Create a connection to the database
+        conn = sqlite3.connect(db_name)
+        # Write the DataFrame to the database
+        df.to_sql(table_name, conn, if_exists='replace', index=False)
+        # Close the connection
+        conn.close()
+        # Delete the DataFrame to save memory
+        del df
+        gc.collect()
+        print(" SQLite database created successfully!...")
+    except Exception as e:
+        print(" Error while writing to SQLite database: ", str(e))
+        
+        
         
 if __name__ == '__main__':
-    # Create output folders if they don't exist
-    if not os.path.exists(os.path.dirname(INPUT_CSV_PATH)):
-        os.makedirs(os.path.dirname(INPUT_CSV_PATH))
     
     unify_col_name()
-    output_csv(combine_csv(input_csv()))
+    output_sqlite(combine_csv(input_csv()))
+        
+        
