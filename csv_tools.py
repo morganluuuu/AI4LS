@@ -5,12 +5,13 @@ import os
 import gc
 import sqlite3
 
+
 INPUT_CSV_PATH = f'{os.path.dirname(os.path.abspath(__file__))}/input_csv/*.csv'
 OUTPUT_CSV_PATH = f'{os.path.dirname(os.path.abspath(__file__))}/output_csv/concatenated_csv.csv'
 # Define the chunksize for reading CSV files
 CHUNKSIZE = 10000 
 # Add more columns as needed
-SELECTED_COLS = "POINTID|GPS_LAT|GPS_LONG|Coarse|Clay|Sand|Silt|pH_H2O|pH_CaCl2|EC|OC|CaCO3|P|N|K|LC0_Desc|LC1_Desc|LU1_Desc|Un-/Managed_LU|BD 0-10|BD 10-20|BD 20-30|BD 0-20"
+SELECTED_COLS = "POINTID|GPS_LAT|GPS_LONG|SURVEY_DATE|Coarse|Clay|Sand|Silt|pH_H2O|pH_CaCl2|EC|OC|CaCO3|P|N|K|LC0_Desc|LC1_Desc|LU1_Desc|Un-/Managed_LU|BD 0-10|BD 10-20|BD 20-30|BD 0-20"
     
 # Define a dictionary to map old column names to new ones
 COL_NAME_MAPPING = {
@@ -30,8 +31,27 @@ COL_NAME_MAPPING = {
         'TH_LONG': 'GPS_LONG',
         # Add more mappings as needed
     }
-# Biodiversity (still preparing) 
 
+def update_gps_vol():
+    # Read CSV files
+    # df2 = pd.read_csv('/Users/jy-m1/Library/Mobile Documents/com~apple~CloudDocs/code/code/AI4LS/input_csv/LUCAS-SOIL-2018(managed-l)(bulk-density)_origin copy 2.csv')
+    C = pd.read_csv('/Users/jy-m1/Library/Mobile Documents/com~apple~CloudDocs/code/code/AI4LS/input_csv/LUCAS_Topsoil_2015_20200323 copy.csv')
+    D = pd.read_csv('/Users/jy-m1/Library/Mobile Documents/com~apple~CloudDocs/code/code/AI4LS/input_csv/D.csv')
+    # Drop duplicates in 'POINTID' column before setting it as index
+    D = D.drop_duplicates(subset='POINTID')
+    C = C.drop_duplicates(subset='POINTID')
+
+    # Set 'POINTID' as the index for D and C for easier data manipulation
+    D.set_index('POINTID', inplace=True)
+    C.set_index('POINTID', inplace=True)
+
+    # Update the 'GPS_LAT' and 'GPS_LONG' columns in C with the values from D
+    C.update(D[['GPS_LAT', 'GPS_LONG']])
+
+    # Reset the index for C
+    C.reset_index(inplace=True)
+    # Save the updated DataFrame
+    C.to_csv('/Users/jy-m1/Library/Mobile Documents/com~apple~CloudDocs/code/code/AI4LS/input_csv/LUCAS_Topsoil_2015_20200323 2 copy.csv', index=False)
 
 
 def unify_col_name(input_path: str = INPUT_CSV_PATH, 
@@ -217,6 +237,7 @@ def output_sqlite(df, db_name: str = 'combined_csv.db',
         
 if __name__ == '__main__':
     unify_col_name()
+    # xx()
     output_csv(concat_csv(input_csv()))
         
         
