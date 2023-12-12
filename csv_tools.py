@@ -4,8 +4,9 @@ import re
 import os
 import gc
 import sqlite3
+from memory_profiler import profile
 
-
+# ./pema_latest.bds
 INPUT_CSV_PATH = f'{os.path.dirname(os.path.abspath(__file__))}/input_csv/*.csv'
 OUTPUT_CSV_PATH = f'{os.path.dirname(os.path.abspath(__file__))}/output_csv/concatenated_csv.csv'
 # Define the chunksize for reading CSV files
@@ -32,28 +33,41 @@ COL_NAME_MAPPING = {
         # Add more mappings as needed
     }
 
-def update_gps_vol():
-    # Read CSV files
-    # df2 = pd.read_csv('/Users/jy-m1/Library/Mobile Documents/com~apple~CloudDocs/code/code/AI4LS/input_csv/LUCAS-SOIL-2018(managed-l)(bulk-density)_origin copy 2.csv')
-    C = pd.read_csv('/Users/jy-m1/Library/Mobile Documents/com~apple~CloudDocs/code/code/AI4LS/input_csv/LUCAS_Topsoil_2015_20200323 copy.csv')
-    D = pd.read_csv('/Users/jy-m1/Library/Mobile Documents/com~apple~CloudDocs/code/code/AI4LS/input_csv/D.csv')
-    # Drop duplicates in 'POINTID' column before setting it as index
-    D = D.drop_duplicates(subset='POINTID')
-    C = C.drop_duplicates(subset='POINTID')
+def update_gps_vol(input_csv_path: str, output_csv_path: str):
+    '''
+    Updates the 'GPS_LAT' and 'GPS_LONG' columns in a CSV file with values from another CSV file.
+    Args:
+        input_csv_path (str): The path to the input CSV file.
+        output_csv_path (str): The path to the output CSV file.
+    Returns:
+        None: This function does not return anything.
+    '''
+    try:
+        # Read the input CSV files
+        C = pd.read_csv(input_csv_path)
+        D = pd.read_csv('/Users/jy-m1/Library/Mobile Documents/com~apple~CloudDocs/code/code/AI4LS/input_csv/D.csv')
+        
+        # Drop duplicates in 'POINTID' column before setting it as index
+        D = D.drop_duplicates(subset='POINTID')
+        C = C.drop_duplicates(subset='POINTID')
 
-    # Set 'POINTID' as the index for D and C for easier data manipulation
-    D.set_index('POINTID', inplace=True)
-    C.set_index('POINTID', inplace=True)
+        # Set 'POINTID' as the index for D and C for easier data manipulation
+        D.set_index('POINTID', inplace=True)
+        C.set_index('POINTID', inplace=True)
 
-    # Update the 'GPS_LAT' and 'GPS_LONG' columns in C with the values from D
-    C.update(D[['GPS_LAT', 'GPS_LONG']])
+        # Update the 'GPS_LAT' and 'GPS_LONG' columns in C with the values from D
+        C.update(D[['GPS_LAT', 'GPS_LONG']])
 
-    # Reset the index for C
-    C.reset_index(inplace=True)
-    # Save the updated DataFrame
-    C.to_csv('/Users/jy-m1/Library/Mobile Documents/com~apple~CloudDocs/code/code/AI4LS/input_csv/LUCAS_Topsoil_2015_20200323 2 copy.csv', index=False)
+        # Reset the index for C
+        C.reset_index(inplace=True)
+        
+        # Save the updated DataFrame to the output CSV file
+        C.to_csv(output_csv_path, index=False)
+        
+    except Exception as e:
+        print(f" Error while updating GPS coordinates: {e}")
 
-
+@profile
 def unify_col_name(input_path: str = INPUT_CSV_PATH, 
                    column_mapping: dict = COL_NAME_MAPPING) -> None:
     '''
@@ -92,7 +106,7 @@ def unify_col_name(input_path: str = INPUT_CSV_PATH,
     except Exception as e:
         print(f" Error while renaming CSV columns : {e}")
 
-
+@profile
 def input_csv(input_path: str = INPUT_CSV_PATH, 
               usecols: str = SELECTED_COLS,
               chunksize: int = CHUNKSIZE) -> list:
@@ -144,7 +158,7 @@ def input_csv(input_path: str = INPUT_CSV_PATH,
     except Exception as e:
         print(f" Error while reading CSV : {e}")
 
-
+@profile
 def concat_csv(df: list, 
                usecols: str = SELECTED_COLS) -> pd.DataFrame:
     """
@@ -174,7 +188,7 @@ def concat_csv(df: list,
 
     except Exception as e:
         print("Error while combining CSV:", str(e))
-        
+@profile
 def output_csv(df, chunksize: int = CHUNKSIZE, 
                output_path: str = OUTPUT_CSV_PATH) -> None:
     """
@@ -197,8 +211,8 @@ def output_csv(df, chunksize: int = CHUNKSIZE,
             chunksize = chunksize,)
         
         # Delete the DataFrame to save memory
-        del df
-        gc.collect()
+        # del df
+        # gc.collect()
         print(" CSV file created successfully!...")
     except PermissionError: 
         print(" Permission denied. Unable to write the CSV file...")
@@ -237,7 +251,7 @@ def output_sqlite(df, db_name: str = 'combined_csv.db',
         
 if __name__ == '__main__':
     unify_col_name()
-    # xx()
-    output_csv(concat_csv(input_csv()))
+    # update_gps_vol()
+    # output_csv(concat_csv(input_csv()))
         
         
