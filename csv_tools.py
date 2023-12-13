@@ -10,9 +10,9 @@ from memory_profiler import profile
 INPUT_CSV_PATH = f'{os.path.dirname(os.path.abspath(__file__))}/input_csv/*.csv'
 OUTPUT_CSV_PATH = f'{os.path.dirname(os.path.abspath(__file__))}/output_csv/concatenated_csv.csv'
 # Define the chunksize for reading CSV files
-CHUNKSIZE = 10000 
+CHUNKSIZE = 10000 # 10k rows at one time
 # Add more columns as needed
-SELECTED_COLS = "POINTID|GPS_LAT|GPS_LONG|SURVEY_DATE|Coarse|Clay|Sand|Silt|pH_H2O|pH_CaCl2|EC|OC|CaCO3|P|N|K|LC0_Desc|LC1_Desc|LU1_Desc|Un-/Managed_LU|BD 0-10|BD 10-20|BD 20-30|BD 0-20"
+SELECTED_COLS = "POINTID|SURVEY_YEAR|GPS_LAT|GPS_LONG|pH_H2O|pH_CaCl2|EC|OC|CaCO3|P|N|K|LC0_Desc|LC1_Desc|LU1_Desc|Un-/Managed_LU|BD 0-20|Coarse|Clay|Sand|Silt|EROSION_PRESENT"
     
 # Define a dictionary to map old column names to new ones
 COL_NAME_MAPPING = {
@@ -67,7 +67,7 @@ def update_gps_vol(input_csv_path: str, output_csv_path: str):
     except Exception as e:
         print(f" Error while updating GPS coordinates: {e}")
 
-@profile
+# @profile
 def unify_col_name(input_path: str = INPUT_CSV_PATH, 
                    column_mapping: dict = COL_NAME_MAPPING) -> None:
     '''
@@ -106,7 +106,7 @@ def unify_col_name(input_path: str = INPUT_CSV_PATH,
     except Exception as e:
         print(f" Error while renaming CSV columns : {e}")
 
-@profile
+# @profile
 def input_csv(input_path: str = INPUT_CSV_PATH, 
               usecols: str = SELECTED_COLS,
               chunksize: int = CHUNKSIZE) -> list:
@@ -158,7 +158,7 @@ def input_csv(input_path: str = INPUT_CSV_PATH,
     except Exception as e:
         print(f" Error while reading CSV : {e}")
 
-@profile
+# @profile
 def concat_csv(df: list, 
                usecols: str = SELECTED_COLS) -> pd.DataFrame:
     """
@@ -188,7 +188,7 @@ def concat_csv(df: list,
 
     except Exception as e:
         print("Error while combining CSV:", str(e))
-@profile
+# @profile
 def output_csv(df, chunksize: int = CHUNKSIZE, 
                output_path: str = OUTPUT_CSV_PATH) -> None:
     """
@@ -252,6 +252,6 @@ def output_sqlite(df, db_name: str = 'combined_csv.db',
 if __name__ == '__main__':
     unify_col_name()
     # update_gps_vol()
-    # output_csv(concat_csv(input_csv()))
+    output_csv(concat_csv(input_csv()))
         
         
