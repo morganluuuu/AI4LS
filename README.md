@@ -1,7 +1,7 @@
 # This is the data handling tool for the [AI4LS](https://ai4lifesciences.com/about/) Hackathon
 
 ## Introductions
-    AI for Life Sciences is a challenge series connecting AI enthusiasts with organizations to apply AI in various life sciences domains like biology, genetics, and ecology. Participants work on real-world problems, using AI to create innovative solutions.
+AI for Life Sciences is a challenge series connecting AI enthusiasts with organizations to apply AI in various life sciences domains like biology, genetics, and ecology. Participants work on real-world problems, using AI to create innovative solutions.
 ## About this Project
   - [Demo Website](http://13.213.141.140/) 
   - [Frontend](https://github.com/bobotangpy/AI4SL-Frontend)
