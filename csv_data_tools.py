@@ -6,7 +6,8 @@ import gc
 import sqlite3
 from memory_profiler import profile
 
-# ./pema_latest.bds
+
+
 INPUT_CSV_PATH = f'{os.path.dirname(os.path.abspath(__file__))}/input_csv/*.csv'
 OUTPUT_CSV_PATH = f'{os.path.dirname(os.path.abspath(__file__))}/output_csv/concatenated_csv.csv'
 # Define the chunksize for reading CSV files
@@ -33,41 +34,52 @@ COL_NAME_MAPPING = {
         # Add more mappings as needed
     }
 
-def update_gps_vol(input_csv_path: str, output_csv_path: str):
+def update_gps_val(input_csv_path_a : str,
+                   input_csv_path_b : str, 
+                   output_csv_path : str = OUTPUT_CSV_PATH) -> None:
     '''
-    Updates the 'GPS_LAT' and 'GPS_LONG' columns in a CSV file with values from another CSV file.
-    Args:
+    Replicate the 'GPS_LAT' and 'GPS_LONG' values, contingent upon their existence, by correlating the 'POINTID' across two CSV files.
+    
+    Parameters:
         input_csv_path (str): The path to the input CSV file.
         output_csv_path (str): The path to the output CSV file.
     Returns:
         None: This function does not return anything.
+    Raises:
+        Exception: If there is an error while updating GPS coordinates.
     '''
     try:
         # Read the input CSV files
-        C = pd.read_csv(input_csv_path)
-        D = pd.read_csv('/Users/jy-m1/Library/Mobile Documents/com~apple~CloudDocs/code/code/AI4LS/input_csv/D.csv')
+        csv_with_data = pd.read_csv(input_csv_path_a)
+        csv_missing_data = pd.read_csv(input_csv_path_b)
         
-        # Drop duplicates in 'POINTID' column before setting it as index
-        D = D.drop_duplicates(subset='POINTID')
-        C = C.drop_duplicates(subset='POINTID')
+        if not csv_with_data or not csv_missing_data:
+            raise FileNotFoundError("No CSV files found. Please check the input path... ")
+        else:
+            # 1. Drop duplicates in 'POINTID' column before setting it as index
+            csv_with_data = csv_with_data.drop_duplicates(subset='POINTID')
+            csv_missing_data = csv_missing_data.drop_duplicates(subset='POINTID')
 
-        # Set 'POINTID' as the index for D and C for easier data manipulation
-        D.set_index('POINTID', inplace=True)
-        C.set_index('POINTID', inplace=True)
+            # 2. Set 'POINTID' as the index for csv_missing_data and csv_with_data for easier data manipulation
+            csv_with_data.set_index('POINTID', inplace=True)
+            csv_missing_data.set_index('POINTID', inplace=True)
 
-        # Update the 'GPS_LAT' and 'GPS_LONG' columns in C with the values from D
-        C.update(D[['GPS_LAT', 'GPS_LONG']])
+            # 3. Update the 'GPS_LAT' and 'GPS_LONG' columns in csv_missing_data with the values from csv_with_data
+            csv_missing_data.update(csv_with_data[['GPS_LAT', 'GPS_LONG']])
 
-        # Reset the index for C
-        C.reset_index(inplace=True)
-        
-        # Save the updated DataFrame to the output CSV file
-        C.to_csv(output_csv_path, index=False)
+            # 4. Reset the index for csv_missing_data
+            csv_missing_data.reset_index(inplace=True)
+            
+            # 5. Save the updated DataFrame to the output CSV file
+            csv_missing_data.to_csv(output_csv_path, index=False)
+            print(" CSV file created successfully!...")
+            return None
         
     except Exception as e:
         print(f" Error while updating GPS coordinates: {e}")
 
-# @profile
+
+@profile
 def unify_col_name(input_path: str = INPUT_CSV_PATH, 
                    column_mapping: dict = COL_NAME_MAPPING) -> None:
     '''
@@ -106,14 +118,14 @@ def unify_col_name(input_path: str = INPUT_CSV_PATH,
     except Exception as e:
         print(f" Error while renaming CSV columns : {e}")
 
-# @profile
+@profile
 def input_csv(input_path: str = INPUT_CSV_PATH, 
               usecols: str = SELECTED_COLS,
               chunksize: int = CHUNKSIZE) -> list:
     """
     Read CSVs to a DataFrame list.
 
-    Args:
+    Parameters:
         input_path (str): Path to the CSV files. Defaults to INPUT_CSV_PATH.
         usecols (str): Columns to be read from the CSV files. Defaults to SELECTED_COLS.
         chunksize (int): Number of rows to be read at a time. Defaults to CHUNKSIZE.
@@ -158,7 +170,7 @@ def input_csv(input_path: str = INPUT_CSV_PATH,
     except Exception as e:
         print(f" Error while reading CSV : {e}")
 
-# @profile
+@profile
 def concat_csv(df: list, 
                usecols: str = SELECTED_COLS) -> pd.DataFrame:
     """
@@ -211,8 +223,8 @@ def output_csv(df, chunksize: int = CHUNKSIZE,
             chunksize = chunksize,)
         
         # Delete the DataFrame to save memory
-        # del df
-        # gc.collect()
+        del df
+        gc.collect()
         print(" CSV file created successfully!...")
     except PermissionError: 
         print(" Permission denied. Unable to write the CSV file...")
@@ -247,11 +259,15 @@ def output_sqlite(df, db_name: str = 'combined_csv.db',
     except Exception as e:
         print(" Error while writing to SQLite database: ", str(e))
         
+def main():
+    unify_col_name()
+    update_gps_vol()
+    output_csv(concat_csv(input_csv()))
+        
+        
         
         
 if __name__ == '__main__':
-    unify_col_name()
-    # update_gps_vol()
-    output_csv(concat_csv(input_csv()))
+    main()
         
         
