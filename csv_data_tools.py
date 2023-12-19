@@ -118,6 +118,7 @@ def unify_col_name(input_path: str = INPUT_CSV_PATH,
     except Exception as e:
         print(f" Error while renaming CSV columns : {e}")
 
+
 @profile
 def input_csv(input_path: str = INPUT_CSV_PATH, 
               usecols: str = SELECTED_COLS,
