@@ -1,4 +1,4 @@
-# This is the data handling tool for the [AI4LS](https://ai4lifesciences.com/about/) Hackathon (2023)
+# This is the data handling tool for the Hackathon 
 
 ## Introductions
 [AI for Life Sciences](https://ai4lifesciences.com/about/)(2023) is a challenge series connecting AI enthusiasts with organizations to apply AI in various life sciences domains like biology, genetics, and ecology. Participants work on real-world problems, using AI to create innovative solutions.
