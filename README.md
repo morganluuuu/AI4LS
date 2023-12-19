@@ -10,18 +10,18 @@
   - [Data tools](https://github.com/morganluuuu/AI4LS/tree/main)
     
 ## Setting Up
-    ```bash
-    git clone https://github.com/morganluuuu/AI4LS.git
-    ```
-    
-    ```bash
-    python3 -m venv venv
-    ```
-    
-    ```bash
-    source venv/bin/activate
-    ```
-    
-    ```bash
-    pip install -r requirements.txt
-    ```
+  ```bash
+  git clone https://github.com/morganluuuu/AI4LS.git
+  ```
+  
+  ```bash
+  python3 -m venv venv
+  ```
+  
+  ```bash
+  source venv/bin/activate
+  ```
+  
+  ```bash
+  pip install -r requirements.txt
+  ```
