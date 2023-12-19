@@ -1,4 +1,4 @@
-# This is the data handling tool for the [AI4LS](https://ai4lifesciences.com/about/) Hackathon
+# This is the data handling tool for the [AI4LS](https://ai4lifesciences.com/about/) Hackathon (2023)
 
 ## Introductions
 AI for Life Sciences is a challenge series connecting AI enthusiasts with organizations to apply AI in various life sciences domains like biology, genetics, and ecology. Participants work on real-world problems, using AI to create innovative solutions.
@@ -11,12 +11,15 @@ AI for Life Sciences is a challenge series connecting AI enthusiasts with organi
     ```bash
     git clone https://github.com/morganluuuu/AI4LS.git
     ```
+    
     ```bash
     python3 -m venv venv
     ```
+    
     ```bash
     source venv/bin/activate
     ```
+    
     ```bash
     pip install -r requirements.txt
     ```
