@@ -1,4 +1,4 @@
-# This is the data handling tool for the AI4LS Hackathon 
+# This is the data processing tool for the AI4LS Hackathon 
 
 ## Introductions
 [AI for Life Sciences](https://ai4lifesciences.com/about/)(2023), hosted by the University of Vienna, is a challenge series that connects AI enthusiasts with organizations to apply artificial intelligence in various life sciences domains such as biology, genetics, and ecology. Participants engage in addressing real-world problems, utilizing AI to devise innovative solutions.
